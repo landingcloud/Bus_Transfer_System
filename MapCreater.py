@@ -45,6 +45,10 @@ def read_HeadSitArr(sitearr):
 def init_data():
     read_HeadSitArr(ExcelReader.load_excel("./公交.xlsx"))
 
+def print_Site():
+    for site in SiteDic:
+        print(site)
+
 if __name__ == "__main__":
     #read_HeadSitArr(SiteArr)
     read_HeadSitArr(ExcelReader.load_excel("./公交.xlsx"))
