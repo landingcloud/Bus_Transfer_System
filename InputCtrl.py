@@ -11,7 +11,7 @@ def help_info():
     print("--help获取帮助")
     print("--version获取程序简介")
     print("--Site获取所有站点")
-    print("--find 起始点 终止点 :查找最短路径")
+    print("--find -transfer/-distance 起始点 终止点 :查找最短路径")
     print("--Q退出程序")
 
 def Input_Ctrl():
