@@ -277,6 +277,7 @@ def mintransferselect(RouteArr, BusIdArr):  #在若干条路径中提取最少�
                 #例如：BusIdArr2[ti] == [["1站", "2站"], ["2站"], ["2站"]]
                 for p in range(len(BusIdArr2[ti])):
                     if len(set(BusIdArr2[ti][p]) & set(BusIdArr2[tj][p])) != len(set(BusIdArr2[ti][p])):
+                        tj += 1
                         break
                 else:
                     RouteArr2 = RouteArr2[0: tj] + RouteArr2[tj + 1:]
@@ -295,7 +296,172 @@ def mintransferselect(RouteArr, BusIdArr):  #在若干条路径中提取最少�
 
 
 def mindistanceselect(RouteArr, BusIdArr):  #在若干条路径中提取最短距离路径。   当最少换乘路径获取后，再次获取其中最短距离的路径。
-    pass
+    #大体思路
+    #通过BusIdArr来计算距离，挑选出距离最短的若干路线。此时注意环形线路问题。
+    #去重
+
+    mincount = float("inf") #最短路线
+    #goodindex = []  #选出的下标
+    goodtempRouteArr = []
+    goodtempBusIdArr = []
+    for i in range(len(BusIdArr)):  #每一种路线情况
+        tlen = 0
+        tempRouteArr = [[RouteArr[i][0]]]   #函数remakesite不会返回Start节点，所以整个tempRouteArr的第一个节点是空的，需要补上
+        tempBusIdArr = [[]]                 #这个补上有点特殊，因为BusIdArr[i][0]是一条公交线路
+        for j in range(len(BusIdArr[i])):   #一条路线中的每个节点对应的公交线路   eg：[['2路', '5路'], ['5路']]
+            ttlen ,ttempRouteArr, ttempBusIdArr = remakesite(BusIdArr[i][j], RouteArr[i][j], RouteArr[i][j + 1])
+            tlen += ttlen
+            #开始拼接，有时候可能2条路径后又有3条路径，根据乘法原则，会产生2*3=6条路径
+            #再中转一下QAQQAQ我尽量让自己看得懂
+            tttempRouteArr = []
+            for troutearr in tempRouteArr:
+                for ttroutearr in ttempRouteArr:
+                    tttempRouteArr.append(copy.deepcopy(troutearr + ttroutearr))
+            tempRouteArr.clear()
+            tempRouteArr = tttempRouteArr
+
+            tttempBusIdArr = []
+            for tbusidarr in tempBusIdArr:
+                for ttbusidarr in ttempBusIdArr:
+                    if len(tbusidarr) == 0: #这就是上面补上第一个公交线路
+                        ttbusidarr.insert(0, ttbusidarr[0])
+                    tttempBusIdArr.append(copy.deepcopy(tbusidarr + ttbusidarr))
+
+
+            tempBusIdArr.clear()
+            tempBusIdArr = tttempBusIdArr
+
+
+
+        if tlen <= mincount:
+            if tlen < mincount:
+                goodtempRouteArr.clear()
+                goodtempBusIdArr.clear()
+            mincount = tlen
+            goodtempRouteArr.extend(tempRouteArr)
+            goodtempBusIdArr.extend(tempBusIdArr)
+
+    #去重
+    RouteArr2 = goodtempRouteArr
+    BusIdArr2 = goodtempBusIdArr
+
+    tlen = len(RouteArr2)
+    ti = 0
+    while ti < tlen:
+        tj = ti + 1
+        while tj < tlen:
+            if len(RouteArr2[ti]) != len(RouteArr2[tj]):  # 长度不相等直接不用比了
+                tj += 1
+                continue
+            if len(set(RouteArr2[ti]) & set(RouteArr2[tj])) != len(RouteArr2[ti]):  # 交集不相等，说明不同
+                tj += 1
+                continue
+            else:  # 说明相等
+                if len(BusIdArr2[ti]) != len(BusIdArr2[ti]):
+                    tj += 1
+                    continue
+                # BusIdArr2[ti]是二维列表，第一维是一条路线的公交线路，第二维保存了节点间的公交线路，有可能两个节点之间不止一个公交线。
+                # 例如：BusIdArr2[ti] == [["1站", "2站"], ["2站"], ["2站"]]
+                for p in range(len(BusIdArr2[ti])):
+                    if len(set(BusIdArr2[ti][p]) & set(BusIdArr2[tj][p])) != len(set(BusIdArr2[ti][p])):
+                        tj += 1
+                        break
+                else:
+                    RouteArr2 = RouteArr2[0: tj] + RouteArr2[tj + 1:]
+                    BusIdArr2 = BusIdArr2[0: tj] + BusIdArr2[tj + 1:]
+                    tlen -= 1  # 由于删了一个，就让总长度减一。    ti是固定的，tj是浮动的，所以应该优先删除tj。
+        ti += 1  # ti顺延一位
+
+    return RouteArr2, BusIdArr2
+
+def remakesite(Roads, Start, End):
+    '''一条公交线路，给定起点和终点，复原出最短通路
+    Roads: list [string, string,...]
+    Start: string
+    End: string
+    return: value, list，list 最短长度, 复原后的节点线路, 相匹配的公交线路。注意，可能不止1条
+    '''
+    minlen = float('inf')
+    goodSites = []  #good可能不止一条！！！！！
+    goodRoads = []
+    for road in Roads:
+        sites = OneRoadMapCreater.RoadSiteDic[road]
+        tempSites = []
+        tempRoads = []
+        counter = -1 #计数，Start和End间隔了几个节点，当没有检测到Start或End时为-1，检测到后置为0，之后开始计数
+        if (Start not in sites) or (End not in sites):  #如果这条公交线路没有经过Start或End
+            continue
+        if sites[0] == sites[-1]:   #环形线路
+            for site in sites:
+                if counter == -1 and (site == Start or site == End):
+                    counter = 0
+                    if site == End: #反向
+                        tempSites.append(site)
+                        tempRoads.append(road)
+                    continue    #计算需要，可以手动计算一下
+                elif counter >= 0:
+                    counter += 1
+                    tempSites.append(site)  #暂存当前路线
+                    tempRoads.append(road)
+                    if site == Start or site == End:    #循环线路，循环取最小
+                        reverse_counter = len(sites) - 1 - counter  #手动计算一下，假设Start和End为1和4     1 2 3 4 5 1     距离是6 - 1 - 3
+                        if counter <= reverse_counter:  #如果不用求补
+                            if site == End: #正向
+                                break
+                            else:   #反向，即先访问的End，将tempSites倒过来
+                                del(tempSites[-1])
+                                del(tempRoads[-1])
+                                tempSites.reverse()
+                                tempRoads.reverse()
+                                break
+                        else:   #需要求补
+                            counter = reverse_counter
+                            tempSites.clear()   #求补的话之前正向的结果都删掉
+                            tempRoads.clear()
+                            if site == End: #正向
+                                tt = sites[0:sites.index(Start)]    #不要Start
+                                tt += sites[sites.index(End): len(sites) - 1]   #不能要最后一个，因为循环队列的开头和结尾一样
+                                tt.reverse()
+                                tempSites.extend(tt)
+                                tempRoads.extend([road for tc in range(counter - 1)])
+                                break
+                            else:   #反向
+                                tt = sites[sites.index(Start) + 1, len(sites) - 1]  #不要Start
+                                tt += sites[0: sites.index(End) + 1]
+                                tempSites.extend(tt)
+                                tempRoads.extend([road for tc in range(counter - 1)])
+                                break
+        else:   #不是环形线路，重复上面代码，去掉求补即可
+            for site in sites:
+                if counter == -1 and (site == Start or site == End):
+                    counter = 0
+                    if site == End: #反向保存
+                        tempSites.append(site)
+                        tempRoads.append(road)
+                    continue
+                elif counter >= 0:
+                    counter += 1
+                    tempSites.append(site)  # 暂存当前路线
+                    tempRoads.append(road)
+                    if site == Start or site == End:
+                        if site == End: #正向
+                            break
+                        else:   #反向
+                            del(tempSites[-1])
+                            del(tempRoads[-1])
+                            tempSites.reverse()
+                            tempRoads.reverse()
+                            break
+        #接下来选最小
+        if counter <= minlen:
+            if 0 or counter < minlen:
+                minlen = counter
+                goodSites.clear()
+                goodRoads.clear()
+            goodSites.append(tempSites)
+            goodRoads.append(tempRoads)
+    return minlen, goodSites, goodRoads
+
 
 def getfinall(start, end, Routes, BusIdMaps, mode):
     pairs = [[], []]
@@ -311,14 +477,14 @@ def getfinall(start, end, Routes, BusIdMaps, mode):
     if mode == 1:   #最短路径
         RouteArr2, BusIdArr2 = mintransferselect(pairs[0], pairs[1])
     else:
-        pass
+        RouteArr2, BusIdArr2 = mindistanceselect(pairs[0], pairs[1])
 
     for i in range(len(RouteArr2)):
         print(RouteArr2[i])
         print(BusIdArr2[i])
 
 
-
+#逐渐废弃
 def print_info(start, end, Routes, BusIdMaps):
     pairs = [[], []]
     for i in range(len(Routes)):
@@ -330,7 +496,7 @@ def print_info(start, end, Routes, BusIdMaps):
         pairs[0].append(RouteArr)
         pairs[1].append(BusIdArr)
 
-
+    #去重，但是有bug，这个tj的操作应该有问题，“相对正确”的操作见上
     tlen = len(pairs[0])
     ti = 0
     # while ti < tlen:
