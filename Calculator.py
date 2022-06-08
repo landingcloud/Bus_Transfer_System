@@ -323,8 +323,8 @@ def mindistanceselect(RouteArr, BusIdArr):  #在若干条路径中提取最短�
             tttempBusIdArr = []
             for tbusidarr in tempBusIdArr:
                 for ttbusidarr in ttempBusIdArr:
-                    if len(tbusidarr) == 0: #这就是上面补上第一个公交线路
-                        ttbusidarr.insert(0, ttbusidarr[0])
+                    #if len(tbusidarr) == 0: #这就是上面补上第一个公交线路
+                    #    ttbusidarr.insert(0, ttbusidarr[0])
                     tttempBusIdArr.append(copy.deepcopy(tbusidarr + ttbusidarr))
 
 
