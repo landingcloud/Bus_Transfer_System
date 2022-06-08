@@ -1,14 +1,17 @@
 #按照同一条公交线路，创建邻接矩阵
 #同一条公交线路的所有节点认为互相连通，并且边代价都为1
 import ExcelReader
+import copy
 SiteDic = {} #站点名：站点index
 Index_Site_Dic = {} #站点index：站点名
 BusIdArr = [[[] for col in range(500)] for row in range(500)]   #站点对应公交线
 HeadSiteArr = [[float("inf") for col in range(500)] for row in range(500)]
+RoadSiteDic = {}    #公交线路名：这条线路上的所有节点的下标
 def read_HeadSiteArr(sitearr):
     global HeadSiteArr
     global SiteDic
     global BusIdArr
+    global RoadSiteDic
     i = 0 #节点总数
 
     #is_though = 0 #判断连通，换公交就不连通
@@ -29,6 +32,7 @@ def read_HeadSiteArr(sitearr):
             #is_though = 0
             nowbussid = site[1:]    #保存当前公交名称
             oneroadsiteindex.clear()    #清空连通路线
+            RoadSiteDic.setdefault(nowbussid, [])   #新开辟对应键值对
             continue
         else:
             #oneroadsite.append(site)    #保存这一条路的所有节点
@@ -37,6 +41,7 @@ def read_HeadSiteArr(sitearr):
                 Index_Site_Dic[i] = site
                 i += 1
             oneroadsiteindex.append(SiteDic[site])#保存对应下标
+            RoadSiteDic[nowbussid].append(site) #站点名塞进去
             #is_though = 1   #同一条线路，置为连通
 
     else:

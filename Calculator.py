@@ -103,7 +103,7 @@ def MinDistanceDijkstra(StartSite, EndSite):
         return -1, [], []
     if EndSite not in MapCreater.SiteDic:
         print("终止点不存在")
-        return -1, [], []
+        return -2, [], []
 
     StartSiteIndex = MapCreater.SiteDic[StartSite]
     EndSiteIndex = MapCreater.SiteDic[EndSite]
@@ -482,7 +482,7 @@ def getfinall(start, end, Routes, BusIdMaps, mode):
     for i in range(len(RouteArr2)):
         print(RouteArr2[i])
         print(BusIdArr2[i])
-
+    return RouteArr2, BusIdArr2
 
 #逐渐废弃
 def print_info(start, end, Routes, BusIdMaps):
@@ -513,6 +513,10 @@ def print_info(start, end, Routes, BusIdMaps):
     for i in range(len(pairs[0])):
         print(pairs[0][i])
         print(pairs[1][i])
+
+def init_data():
+    OneRoadMapCreater.init_data()
+    MapCreater.init_data()
 
 if __name__ == "__main__":
     OneRoadMapCreater.init_data()
